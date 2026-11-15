@@ -19,5 +19,5 @@ test('rover collision dimensions keep the wider chassis out of rocks',()=>{
  const box=new THREE.Box3(new THREE.Vector3(3,0,-3),new THREE.Vector3(4,3,3));
  const player=createPlayerPhysics(p,()=>0,[box],ROVER_COLLIDER);
  for(let i=0;i<180;i++)player.update(1/60,{x:1,z:0});
- assert(Math.abs(p.y-ROVER_COLLIDER.eyeHeight)<.02);assert(p.x<=box.min.x-ROVER_COLLIDER.radius+.01&&p.x>box.min.x-ROVER_COLLIDER.radius-.12);assert(player.grounded);
+ assert.equal(p.y,ROVER_COLLIDER.eyeHeight);assert(p.x<=box.min.x-ROVER_COLLIDER.radius+.01&&p.x>box.min.x-ROVER_COLLIDER.radius-.12);assert(player.grounded);
 });

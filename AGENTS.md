@@ -42,7 +42,7 @@ npm run preview
 | `src/surface-materials.js`, `src/surface-effects.js` | Surface materials and rendering effects. |
 | `src/regolith-texture.js`, `scripts/generate-regolith.mjs` | Loads bundled packed-grain albedo and normal maps; regenerate with `node scripts/generate-regolith.mjs`. Detail is material-scale, separate from traversable mesh relief. |
 | `src/player-physics.js` | Rendered-triangle terrain sampling, movement, gravity, collision, boosters, and bounds. |
-| `src/collision-world.js`, `src/vehicle-support.js` | Shared circular collision contacts and survey radius; 120 Hz centre-of-mass chassis support, eight suspension springs, belly/roof contacts, and shared suspension limits. |
+| `src/collision-world.js` | Shared circular collision contacts and survey radius. |
 | `src/rover.js`, `src/rover-dynamics.js` | Rover model, collider dimensions, wheel support, suspension, and booster visuals. |
 | `src/chase-camera.js`, `src/mouse-capture.js` | Camera clearance and pointer-lock behavior. |
 | `src/wheel-particles.js`, `src/rover-audio.js` | Ground-contact dust and Web Audio driving/booster/scanner effects. |
@@ -86,16 +86,20 @@ Always re-run `git status --short` and inspect diffs before acting. Preserve any
 
 - Surface material detail uses bundled 2048-pixel packed-grain albedo and normal maps, generated deterministically by `scripts/generate-regolith.mjs` using Node built-ins. The generator requires no extra package installation. These maps add fine illustrative detail without changing traversable terrain or collision geometry.
 - Globe and surface rendering use AgX tone mapping, dark neutral regolith, low-angle lighting, restrained bloom/grain, and a CSS lens vignette beneath later HUD layers. Preserve readable HUD overlays when changing the render treatment.
-- Rover support uses eight actual tire locations and a mass-centred chassis. Spring and contact forces create physical pitch/roll and falls when support is lost. Physics owns the driving pose; `rover.update()` receives `physics.support` so wheel rendering and dust use the same contacts.
-- Suspension limits are shared through `SUSPENSION_LIMITS` (0.18 droop / 0.20 compression in model units). Preserve short travel in both the physical controller and the scan pose helper. `src/rover-dynamics.js` remains the pose helper when physical support is not supplied.
+- The original terrain-following movement controller and `src/rover-dynamics.js` spring/damper pose solver control the rover. Four corner contacts drive suspension, and intermediate wheels interpolate travel. Original wheel travel, heave limits, heading smoothing, and grounded dust behavior are restored.
+- The user requested removal of the centre-of-mass/ragdoll physics and a return to original rover behavior. `src/vehicle-support.js` and its dedicated tests have been removed; do not reintroduce them unless explicitly requested.
 - The user explicitly rejected impact-triggered ragdolls, crash sequences, recovery buttons, and automatic repositioning; keep them removed. Normal scene-entry spawning and scan choreography remain part of the experience.
 - `SURFACE_BOUNDS_RADIUS` is shared by collision handling and the visible 180-unit survey perimeter. Collision handling includes sliding circular contacts, swept landings, and outward braking. The existing gravity/boost tuning remains a gameplay choice.
 
 ## Validation and next-agent checklist
 
-Latest handoff verification (November 15, 2026): **77 tests passed** and **`npm run build` succeeded**. Vite reports a non-fatal warning for a minified JavaScript chunk larger than 500 kB. The earlier 62-test baseline has been superseded.
+Latest handoff verification (November 15, 2026): **68 tests passed** and **`npm run build` succeeded**. Vite reports a non-fatal warning for a minified JavaScript chunk larger than 500 kB. The earlier 62-test baseline has been superseded.
 
-Prior physics-work notes report browser checks of stable support, ledge tipping, free fall, short wheel travel, and the main Apollo surface without recovery controls. Those browser checks were not repeated during this documentation/commit handoff. Passing tests and a build do not establish visual correctness for future changes.
+The earlier centre-of-mass ledge/free-fall browser checks describe the removed
+solver and no longer apply. After the revert, the globe-to-Apollo descent and
+restored surface scene were checked in a browser with no runtime errors; a full
+regional driving walkthrough was not repeated. Passing tests and a build do not
+establish visual correctness for future changes.
 
 For subsequent code changes:
 

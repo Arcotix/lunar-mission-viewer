@@ -23,11 +23,8 @@ all [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
 Source URLs and edits are recorded in `public/audio/rover-sources.json`.
 
 Surface driving uses fixed physics steps, sliding rock contacts, swept landings
-on raised objects, and a dashed survey perimeter with outward braking. Rover
-support comes from eight short-travel suspension springs and chassis contacts
-acting around its centre of mass. Unsupported axles lose contact; the vehicle
-naturally tips and falls off ledges rather than hovering over the highest nearby
-terrain point. Suspension travel is limited to 0.18 model units of droop and 0.20
-of compression (about 0.14 scene units total at the rover's scale). There are no
-crash triggers, crash animations, recovery controls, or automatic repositioning.
-Gravity and handling remain tuned for gameplay.
+on raised objects, and a dashed survey perimeter with outward braking. The
+original terrain-following controller and four-contact spring/damper suspension
+control the rover, with intermediate wheels interpolating suspension travel.
+Centre-of-mass tipping and ragdoll physics have been removed. Gravity and handling
+remain tuned for gameplay.
