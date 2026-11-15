@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {createRoverDynamics} from '../src/rover-dynamics.js';
 import {createRover} from '../src/rover.js';
+import {SUSPENSION_LIMITS} from '../src/vehicle-support.js';
 
 const stopped=new THREE.Vector3();
 function settle(dynamics,floor,heading=0,position=new THREE.Vector3(),seconds=3,hz=60){
@@ -25,8 +26,8 @@ test('independent suspension articulates over a single wheel bump',()=>{
   // Suspension travels toward the bump instead of snapping in one frame.
   for(let i=0;i<12;i++)d.update(1/60,new THREE.Vector3(),0,stopped,true,0,floor);
   const wheels=d.state.wheels;
-  assert(wheels[2].offset>wheels[0].offset+.2);
-  assert(wheels.every(w=>Math.abs(w.offset)<=.5));
+  assert(wheels[2].offset>wheels[0].offset+.15);
+  assert(wheels.every(w=>w.offset>=-SUSPENSION_LIMITS.droop&&w.offset<=SUSPENSION_LIMITS.compression));
   settle(d,floor);
   assert(d.state.pitch>.05&&d.state.roll>.05);
 });

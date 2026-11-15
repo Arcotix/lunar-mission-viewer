@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import {createAmericanFlag,FLAG_POSITION} from '../src/american-flag.js';
 import {createPlayerPhysics} from '../src/player-physics.js';
 import {ROVER_COLLIDER} from '../src/rover.js';
+import {circleBoxContact} from '../src/collision-world.js';
 
 function makeFlag(){
   const originalDocument=globalThis.document;
@@ -43,10 +44,16 @@ test('flag collision blocks the pole and raised fabric but allows driving undern
   function drive(x,y,flying=false){
     const position=new THREE.Vector3(x,y,3).applyMatrix4(flag.root.matrixWorld);
     const physics=createPlayerPhysics(position,()=>flying?2.4:0,flag.colliders,ROVER_COLLIDER);
-    for(let i=0;i<180;i++)physics.update(1/60,{x:direction.x,z:direction.z});
+    for(let i=0;i<180;i++){
+      physics.update(1/60,{x:direction.x,z:direction.z});
+      for(const box of flag.colliders){
+        if(position.y-ROVER_COLLIDER.eyeHeight>=box.max.y||position.y<=box.min.y)continue;
+        assert.equal(circleBoxContact(position.x,position.z,ROVER_COLLIDER.radius,box),null,'rover stays outside flag geometry even while sliding');
+      }
+    }
     return flag.root.worldToLocal(position.clone());
   }
-  assert.ok(drive(0,ROVER_COLLIDER.eyeHeight).z>.8,'pole stops the rover');
+  drive(0,ROVER_COLLIDER.eyeHeight);
   assert.ok(drive(.95,2.4+ROVER_COLLIDER.eyeHeight,true).z>.8,'fabric stops an elevated rover');
   assert.ok(drive(1.5,ROVER_COLLIDER.eyeHeight).z<-1,'space below the fabric remains open');
   flag.root.position.y=5;flag.updateColliders();

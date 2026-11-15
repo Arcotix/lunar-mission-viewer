@@ -56,9 +56,9 @@ test('samples the rendered terrain triangles rather than an approximate height',
  const sample=createTerrainSampler(g,2,1);
  assert.equal(sample(-.5,-.5),0);assert.equal(sample(.5,.5),2);
 });
-test('circular perimeter stops outward velocity',()=>{
+test('circular perimeter brakes outward movement before the footprint reaches the edge',()=>{
  const p=new THREE.Vector3(179,1.7,0),player=createPlayerPhysics(p,()=>0);
- simulate(player,3,{x:1,z:0,sprint:true});assert(Math.hypot(p.x,p.z)<=180.00001);assert.equal(player.velocity.x,0);
+ simulate(player,3,{x:1,z:0,sprint:true});assert(Math.hypot(p.x,p.z)<=180-.32);assert(player.velocity.x<.05);
 });
 
 test('Earth-like gravity ends upward coasting promptly after releasing thrust',()=>{
@@ -66,4 +66,33 @@ test('Earth-like gravity ends upward coasting promptly after releasing thrust',(
  player.velocity.y=8;
  simulate(player,1);assert(player.velocity.y<0);assert(p.y<54);
  simulate(player,4);assert(player.grounded);assert.equal(p.y,1.7);
+});
+
+test('a fast fall lands on a thin elevated platform instead of tunneling through it',()=>{
+ const box=new THREE.Box3(new THREE.Vector3(-2,3,-2),new THREE.Vector3(2,3.03,2));
+ const p=new THREE.Vector3(0,4.78,0),player=createPlayerPhysics(p,()=>0,[box]);player.velocity.y=-25;
+ player.update(1/60,idle);assert(Math.abs(p.y-4.73)<1e-9);assert(player.grounded);
+});
+
+test('diagonal wall contact preserves tangential movement',()=>{
+ const box=new THREE.Box3(new THREE.Vector3(2,0,-10),new THREE.Vector3(3,5,10));
+ const p=new THREE.Vector3(0,1.7,0),player=createPlayerPhysics(p,()=>0,[box]);
+ simulate(player,2,{x:1,z:1,sprint:true});assert(p.x<=1.68001);assert(p.z>7);assert(player.velocity.z>4);
+});
+
+test('high horizontal impulses cannot tunnel through thin walls',()=>{
+ const box=new THREE.Box3(new THREE.Vector3(1,0,-2),new THREE.Vector3(1.02,6,2));
+ const p=new THREE.Vector3(0,2,0),player=createPlayerPhysics(p,()=>0,[box]);player.velocity.x=200;
+ player.update(1/60,idle);assert(p.x<.681);assert.equal(player.velocity.x,0);
+});
+
+test('bounds contain the whole footprint and preserve tangent velocity',()=>{
+ const p=new THREE.Vector3(12,1.7,0),player=createPlayerPhysics(p,()=>0,[],{boundsRadius:12,radius:1});
+ player.velocity.set(6,0,4);player.update(1/120,idle);
+ assert(Math.hypot(p.x,p.z)<=11.000001);assert(player.velocity.z>0);assert.equal(player.boundaryDistance,0);
+});
+
+test('diagonal terrain footprint cannot sink into a narrow ridge',()=>{
+ const p=new THREE.Vector3(0,4,0),player=createPlayerPhysics(p,(x,z)=>x>.15&&z>.15?1:0);
+ simulate(player,2);assert.equal(p.y,2.7);
 });

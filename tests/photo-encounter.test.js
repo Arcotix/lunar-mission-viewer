@@ -126,6 +126,25 @@ test('leaving the surface cancels a scan and clears its visuals and UI',()=>{
   assert.equal(s.scene.children.find(child=>child.isMesh).visible,false);
 });
 
+test('scan audio starts with the beam, finishes once, and cancels on leaving',()=>{
+  const events=[];
+  const scanAudio={prepareScan(){events.push('prepare');},scanProgress(value){events.push(value);},finishScan(){events.push('complete');},cancelScan(){events.push('cancel');}};
+  const s=setup({scanAudio});s.encounter.setActive(true);events.length=0;
+  s.encounter.start();assert.deepEqual(events,[],'out-of-range activation stays silent');
+  s.position.set(51,1.5,5);s.encounter.start();s.encounter.start();
+  assert.deepEqual(events,['prepare']);
+  s.headingError=.4;
+  for(let i=0;i<240;i++)s.encounter.update(1/60);
+  assert.deepEqual(events,['prepare'],'positioning and alignment stay silent');
+  s.headingError=0;
+  for(let i=0;i<200;i++)s.encounter.update(1/60);
+  const progress=events.filter(value=>typeof value==='number');
+  assert(progress.length>0&&progress[0]<.01&&progress.at(-1)===1);
+  assert.equal(events.filter(value=>value==='complete').length,1);
+  s.encounter.setActive(false);assert.equal(events.at(-1),'cancel');
+  s.encounter.update(10);assert.equal(events.at(-1),'cancel');
+});
+
 test('closing the scan card, driving away, and changing region stop card media',()=>{
   let pauses=0;
   const s=setup({setupCard:()=>({hide(){pauses++;}})});
